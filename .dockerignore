@@ -2,5 +2,6 @@
 !ISR
 !scripts
 !weights/sample_weights/*
+!weights/all/*
 !config.yml
 !setup.py

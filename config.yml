@@ -80,4 +80,17 @@ training_sets:
     data_name: div2k
 weights_paths:
   discriminator:
-  generator:
+  generator: ./weights/all/rdn-C6-D20-G64-G064-x2_ArtefactCancelling_epoch219.hdf5
+models:
+  psnr-large:
+    generator: rdn
+    weights_path: ./weights/all/rdn-C6-D20-G64-G064-x2_PSNR_epoch086.hdf5
+  psnr-small:
+    generator: rdn
+    weights_path: ./weights/all/rdn-C3-D10-G64-G064-x2_PSNR_epoch134.hdf5
+  noise-cancel:
+    generator: rdn
+    weights_path: ./weights/all/rdn-C6-D20-G64-G064-x2_ArtefactCancelling_epoch219.hdf5
+  gans:
+    generator: rrdn
+    weights_path: ./weights/all/rrdn-C4-D3-G32-G032-T10-x4_epoch299.hdf5

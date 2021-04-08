@@ -1,0 +1,22 @@
+scale: 1
+components:
+  - name: op-image-super-resolution
+    image: registry.jimdo-platform.net/jimdo/jonathanmv/op/image-super-resolution
+    env:
+      PORT: "80"
+    capacity:
+      memory: 3XL
+      CPU: 3XL
+    logging:
+      types:
+        - access_log
+endpoint:
+  domain: op-image-super-resolution.jimdo-platform.net
+  port: 80
+  component: op-image-super-resolution
+  load-balancer:
+    access-log-s3-bucket: jimdo-access-logs
+    healthcheck:
+      path: /health
+notifications:
+  slack: "#creator-bots"
