@@ -10,6 +10,8 @@ import yaml
 from ISR.utils.logger import get_logger
 from ISR.utils.utils import get_timestamp, get_config_from_weights
 
+import tensorflow as tf
+print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
 def _get_module(generator):
     return import_module('ISR.models.' + generator)
@@ -37,8 +39,8 @@ def _setup_model(model):
 
 def run(url, gen, patch_size):
     output_dir = Path('./data/output') / get_timestamp()
-    output_dir.mkdir(parents=True)
-    output_path = output_dir / (url[-5:] + '.jpg')
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / (url[-15:] + '.jpg')
     logger = get_logger(__name__)
     logger.info('Downloading file\n > {}'.format(url))
     img = imageio.imread(url)
@@ -68,7 +70,7 @@ def magnify():
     filepath = run(url, gen, patch_size)
     directory = str(filepath.parent.absolute())
     filename = str(filepath.name)
-    return send_from_directory(directory, filename)
+    return send_from_directory(directory, filename, as_attachment=True, attachment_filename='sharpened.jpg')
 
 
 @app.route('/')
@@ -77,7 +79,3 @@ def health_check():
     logger = get_logger(__name__)
     logger.info('Health Check: OK')
     return 'OK'
-
-
-# if __name__ == "__main__":
-#     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
