@@ -16,11 +16,11 @@ setup(
     description='Image Super Resolution',
     long_description=long_description,
     license='Apache 2.0',
-    install_requires=['imageio', 'numpy', 'tensorflow==2.*', 'tqdm', 'pyaml'],
+    install_requires=['flask', 'gunicorn', 'imageio', 'numpy', 'tensorflow==2.4.1', 'tqdm', 'pyaml'],
     extras_require={
         'tests': ['pytest==4.3.0', 'pytest-cov==2.6.1'],
         'docs': ['mkdocs==1.0.4', 'mkdocs-material==4.0.2'],
-        'gpu': ['tensorflow-gpu==2.*'],
+        'gpu': ['tensorflow-gpu==2.4.1'],
         'dev': ['bumpversion==0.5.3'],
     },
     classifiers=[
