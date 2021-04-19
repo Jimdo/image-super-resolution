@@ -1,26 +1,15 @@
+proxy-build:
+	docker build -t isr-proxy -f ./nginx/Dockerfile ./nginx
+	docker tag isr-proxy registry.jimdo-platform.net/jimdo/jonathanmv/op/image-super-resolution-proxy
+
+proxy-push:
+	wl docker push registry.jimdo-platform.net/jimdo/jonathanmv/op/image-super-resolution-proxy
+
+proxy-deploy:
+	wl service deploy --watch op-image-super-resolution-proxy
+
 build-server: Dockerfile.service.cpu
 	docker build -t serve-isr . -f Dockerfile.service.cpu
-#	docker tag serve-isr registry.jimdo-platform.net/jimdo/jonathanmv/op/image-super-resolution
-
-gpu-build:
-	docker build -t serve-isr-gpu . -f Dockerfile.service.gpu
-	docker tag serve-isr-gpu registry.jimdo-platform.net/jimdo/jonathanmv/op/image-super-resolution-gpu2
-
-gpu-push:
-	wl docker push registry.jimdo-platform.net/jimdo/jonathanmv/op/image-super-resolution-gpu
-
-gpu-run:
-	nvidia-docker run --rm --gpus all -e PORT=80 -p 80:80 -it serve-isr-gpu
-	#docker run --rm --gpus all -e PORT=80 -p 80:80 -it serve-isr-gpu
-
-push:
-	wl docker push registry.jimdo-platform.net/jimdo/jonathanmv/op/image-super-resolution
-
-deploy:
-	wl service deploy --watch op-image-super-resolution
-
-service-delete:
-	wl service delete op-image-super-resolution
 
 run:
 	docker run -v $(pwd)/data/:/home/isr/data -v $(pwd)/weights/:/home/isr/weights -v $(pwd)/config.yml:/home/isr/config.yml -it isr -p -d -c config.yml
