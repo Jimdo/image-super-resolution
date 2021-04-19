@@ -1,19 +1,17 @@
-scale: 1
+scale: 2
 components:
-  - name: op-image-super-resolution
-    image: registry.jimdo-platform.net/jimdo/jonathanmv/op/image-super-resolution
-    env:
-      PORT: "80"
+  - name: op-image-super-resolution-proxy
+    image: registry.jimdo-platform.net/jimdo/jonathanmv/op/image-super-resolution-proxy
     capacity:
-      memory: 3XL
-      CPU: 3XL
+      memory: S
+      CPU: S
     logging:
       types:
         - access_log
 endpoint:
   domain: op-image-super-resolution.jimdo-platform.net
   port: 80
-  component: op-image-super-resolution
+  component: op-image-super-resolution-proxy
   load-balancer:
     access-log-s3-bucket: jimdo-access-logs
     healthcheck:
