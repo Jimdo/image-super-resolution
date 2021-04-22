@@ -2,22 +2,35 @@ import os
 from importlib import import_module
 from pathlib import Path
 from time import time
-
+from multiprocessing import Process
 import imageio
 from flask import Flask, request, send_from_directory
 import yaml
-
+import string
 from ISR.utils.logger import get_logger
 from ISR.utils.utils import get_timestamp, get_config_from_weights
+import random
 
-import tensorflow as tf
-print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
 def _get_module(generator):
     return import_module('ISR.models.' + generator)
 
 
+def predict(url, model_name, destination_path):
+    import tensorflow as tf
+    physical_devices = tf.config.list_physical_devices('GPU')
+    tf.config.experimental.set_memory_growth(physical_devices[0], True)
+    logger = get_logger(__name__)
+    logger.info("Num GPUs Available: ", len(physical_devices))
+    logger.info('Magnifying with {}'.format(model_name))
+    gen = _setup_model(model_name)
+    run(url, gen, 50, destination_path)
+
+
 def _setup_model(model):
+    # Available Models
+    # RDN: psnr-large, psnr-small, noise-cancel
+    # RRDN: gans
     logger = get_logger(__name__)
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     config_file = 'config.yml'
@@ -37,20 +50,26 @@ def _setup_model(model):
     return gen
 
 
-def run(url, gen, patch_size):
+def destination():
     output_dir = Path('./data/output') / get_timestamp()
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / (url[-15:] + '.jpg')
+    name = ''.join(random.choices(string.ascii_uppercase, k=5))
+    output_path = output_dir / (name + '.jpg')
+    return output_path
+
+
+def run(url, gen, patch_size, destination_path):
     logger = get_logger(__name__)
     logger.info('Downloading file\n > {}'.format(url))
     img = imageio.imread(url)
-    logger.info('Result will be saved in\n > {}'.format(output_path))
+    logger.info('Result will be saved in\n > {}'.format(destination_path))
     start = time()
-    sr_img = gen.predict(img, by_patch_of_size=patch_size)
+    logger.info('Using patch size 30')
+    sr_img = gen.predict(img)#, by_patch_of_size=30, padding_size=12)
     end = time()
     logger.info('Elapsed time: {}s'.format(end - start))
-    imageio.imwrite(output_path, sr_img)
-    return output_path
+    imageio.imwrite(destination_path, sr_img)
+    return destination_path
 
 
 app = Flask(__name__)
@@ -58,24 +77,22 @@ app = Flask(__name__)
 
 @app.route('/magnify')
 def magnify():
-    # Available Models
-    # RDN: psnr-large, psnr-small, noise-cancel
-    # RRDN: gans
-    model = request.args.get('model') or 'noise-cancel'
     logger = get_logger(__name__)
-    logger.info('Magnifying with {}'.format(model))
-    gen = _setup_model(model)
+    model_name = request.args.get('model') or 'noise-cancel'
     url = request.args.get('image_url')
-    patch_size = request.args.get('patch_size')
-    filepath = run(url, gen, patch_size)
+    filepath = destination()
+    logger.info('starting prediction')
+    p = Process(target=predict, args=(url, model_name, filepath))
+    p.start()
+    p.join()
     directory = str(filepath.parent.absolute())
     filename = str(filepath.name)
+    logger.info('sending prediction')
+
     return send_from_directory(directory, filename, as_attachment=True, attachment_filename='sharpened.jpg')
 
 
 @app.route('/')
 @app.route('/health')
 def health_check():
-    logger = get_logger(__name__)
-    logger.info('Health Check: OK')
     return 'OK'

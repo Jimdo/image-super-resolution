@@ -8,6 +8,9 @@ proxy-push:
 proxy-deploy:
 	wl service deploy --watch op-image-super-resolution-proxy
 
+proxy-delete:
+	wl service delete op-image-super-resolution-proxy
+
 build-server: Dockerfile.service.cpu
 	docker build -t serve-isr . -f Dockerfile.service.cpu
 
