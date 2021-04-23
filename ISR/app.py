@@ -4,12 +4,26 @@ from pathlib import Path
 from time import time
 from multiprocessing import Process
 import imageio
-from flask import Flask, request, send_from_directory
+from flask import Flask, request, send_from_directory, abort
 import yaml
 import string
 from ISR.utils.logger import get_logger
 from ISR.utils.utils import get_timestamp, get_config_from_weights
 import random
+from urllib.parse import unquote
+
+
+def check_origin(url):
+    valid_origins = [
+        'jimdo-dolphin-static-assets-stage.freetls.fastly.net',
+        'content-storage-stage.freetls.fastly.net',
+        'jimdo-dolphin-static-assets-prod.freetls.fastly.net',
+        'jimdo-storage.freetls.fastly.net',
+        'jimdo-dolphin-static-assets-stage.freetls.fastly.net',
+        'content-storage-stage.freetls.fastly.net'
+    ]
+    origin = url.split('/')[2]
+    return origin in valid_origins
 
 
 def _get_module(generator):
@@ -24,7 +38,7 @@ def predict(url, model_name, destination_path):
     logger.info("Num GPUs Available: ", len(physical_devices))
     logger.info('Magnifying with {}'.format(model_name))
     gen = _setup_model(model_name)
-    run(url, gen, 50, destination_path)
+    run(url, gen, destination_path)
 
 
 def _setup_model(model):
@@ -58,14 +72,14 @@ def destination():
     return output_path
 
 
-def run(url, gen, patch_size, destination_path):
+def run(url, gen, destination_path):
     logger = get_logger(__name__)
     logger.info('Downloading file\n > {}'.format(url))
     img = imageio.imread(url)
     logger.info('Result will be saved in\n > {}'.format(destination_path))
     start = time()
     logger.info('Using patch size 30')
-    sr_img = gen.predict(img)#, by_patch_of_size=30, padding_size=12)
+    sr_img = gen.predict(img)
     end = time()
     logger.info('Elapsed time: {}s'.format(end - start))
     imageio.imwrite(destination_path, sr_img)
@@ -78,8 +92,12 @@ app = Flask(__name__)
 @app.route('/magnify')
 def magnify():
     logger = get_logger(__name__)
+    url = unquote(request.args.get('image_url'))
+    if check_origin(url) is False:
+        logger.info('processing denied: ' + url)
+        return abort(403)
+
     model_name = request.args.get('model') or 'noise-cancel'
-    url = request.args.get('image_url')
     filepath = destination()
     logger.info('starting prediction')
     p = Process(target=predict, args=(url, model_name, filepath))
