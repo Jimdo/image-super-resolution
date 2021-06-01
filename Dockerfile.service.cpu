@@ -1,4 +1,5 @@
 FROM tensorflow/tensorflow:1.13.1-py3
+# Tensorflow 1.13 uses Ubuntu 16.04
 
 # Install system packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -20,10 +21,17 @@ WORKDIR $TENSOR_HOME
 
 COPY setup.py ./
 
-RUN pip install --upgrade pip
+RUN apt-get update
+RUN apt-get install software-properties-common -y
+RUN add-apt-repository ppa:deadsnakes/ppa -y
+RUN apt-get update
+RUN apt-get install python3.6 -y
+RUN alias python=python3.6
+RUN python3.6 -m pip install --upgrade pip
 RUN pip install -e .
 
 ENV PYTHONPATH ./ISR/:$PYTHONPATH
+ENV HOST_MODE CPU
 
 COPY scripts ./scripts
 COPY weights ./weights
