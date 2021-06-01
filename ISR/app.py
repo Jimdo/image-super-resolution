@@ -30,12 +30,18 @@ def _get_module(generator):
     return import_module('ISR.models.' + generator)
 
 
+def is_gpu():
+    return os.environ['HOST_MODE'] == 'GPU'
+
+
 def predict(url, model_name, destination_path):
-    import tensorflow as tf
-    physical_devices = tf.config.list_physical_devices('GPU')
-    tf.config.experimental.set_memory_growth(physical_devices[0], True)
-    logger = get_logger(__name__)
-    logger.info("Num GPUs Available: ", len(physical_devices))
+    physical_devices = []
+    if is_gpu():
+        import tensorflow as tf
+        physical_devices = tf.config.list_physical_devices('GPU')
+        tf.config.experimental.set_memory_growth(physical_devices[0], True)
+
+    logger.info("Num GPUs Available: {}".format(len(physical_devices)))
     logger.info('Magnifying with {}'.format(model_name))
     gen = _setup_model(model_name)
     run(url, gen, destination_path)
@@ -78,7 +84,6 @@ def run(url, gen, destination_path):
     img = imageio.imread(url)
     logger.info('Result will be saved in\n > {}'.format(destination_path))
     start = time()
-    logger.info('Using patch size 30')
     sr_img = gen.predict(img)
     end = time()
     logger.info('Elapsed time: {}s'.format(end - start))
@@ -87,6 +92,8 @@ def run(url, gen, destination_path):
 
 
 app = Flask(__name__)
+logger = get_logger(__name__)
+logger.info('Started in ' + ('GPU' if is_gpu() else 'CPU') + ' mode')
 
 
 @app.route('/magnify')
@@ -99,7 +106,7 @@ def magnify():
 
     model_name = request.args.get('model') or 'noise-cancel'
     filepath = destination()
-    logger.info('starting prediction')
+    logger.info('starting prediction in ' + ('GPU' if is_gpu() else 'CPU') + ' mode')
     p = Process(target=predict, args=(url, model_name, filepath))
     p.start()
     p.join()
