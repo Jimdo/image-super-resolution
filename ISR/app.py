@@ -34,7 +34,7 @@ def is_gpu():
     return os.environ['HOST_MODE'] == 'GPU'
 
 
-def predict(url, model_name, destination_path):
+def predict(url, model_name, destination_path, by_patch_of_size, batch_size, padding_size):
     physical_devices = []
     if is_gpu():
         import tensorflow as tf
@@ -44,7 +44,7 @@ def predict(url, model_name, destination_path):
     logger.info("Num GPUs Available: {}".format(len(physical_devices)))
     logger.info('Magnifying with {}'.format(model_name))
     gen = _setup_model(model_name)
-    run(url, gen, destination_path)
+    run(url, gen, destination_path, by_patch_of_size, batch_size, padding_size)
 
 
 def _setup_model(model):
@@ -78,14 +78,18 @@ def destination():
     return output_path
 
 
-def run(url, gen, destination_path):
+def run(url, gen, destination_path, by_patch_of_size, batch_size, padding_size):
     logger = get_logger(__name__)
     logger.info('Downloading file\n > {}'.format(url))
     img = imageio.imread(url)
     logger.info('Result will be saved in\n > {}'.format(destination_path))
     start = time()
-    sr_img = gen.predict(img)
+    sr_img = gen.predict(img, by_patch_of_size=by_patch_of_size, batch_size=batch_size, padding_size=padding_size)
     end = time()
+    logger.info('size: {}x{}'.format(img.shape[1], img.shape[0]))
+    logger.info('by_patch_of_size: {}'.format(by_patch_of_size))
+    logger.info('batch_size: {}'.format(batch_size))
+    logger.info('padding_size: {}'.format(padding_size))
     logger.info('Elapsed time: {}s'.format(end - start))
     imageio.imwrite(destination_path, sr_img)
     return destination_path
@@ -105,9 +109,12 @@ def magnify():
         return abort(403)
 
     model_name = request.args.get('model') or 'noise-cancel'
+    by_patch_of_size = int(request.args.get('by_patch_of_size') or 0) or None
+    batch_size = int(request.args.get('batch_size') or 10)
+    padding_size = int(request.args.get('padding_size') or 2)
     filepath = destination()
     logger.info('starting prediction in ' + ('GPU' if is_gpu() else 'CPU') + ' mode')
-    p = Process(target=predict, args=(url, model_name, filepath))
+    p = Process(target=predict, args=(url, model_name, filepath, by_patch_of_size, batch_size, padding_size))
     p.start()
     p.join()
     directory = str(filepath.parent.absolute())
