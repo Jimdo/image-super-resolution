@@ -1,3 +1,5 @@
+include wl.deploy.Makefile
+
 proxy-build:
 	docker build -t isr-proxy -f ./nginx/Dockerfile ./nginx
 	docker tag isr-proxy registry.jimdo-platform.net/jimdo/jonathanmv/op/image-super-resolution-proxy
@@ -19,6 +21,9 @@ run:
 
 serve:
 	docker run -e PORT=3000 -p 3000:3000 -it serve-isr
+
+serve-with-restrictions:
+	docker run -e PORT=3000 -p 3000:3000 -m 1g --cpus=".5" -it serve-isr
 
 logs:
 	wl logs op-image-super-resolution -f
