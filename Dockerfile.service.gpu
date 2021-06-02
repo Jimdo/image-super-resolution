@@ -20,7 +20,9 @@ WORKDIR $TENSOR_HOME
 
 COPY setup.py ./
 
-RUN add-apt-repository ppa:deadsnakes/ppa
+RUN apt-get update
+RUN apt-get install software-properties-common -y
+RUN add-apt-repository ppa:deadsnakes/ppa -y
 RUN apt-get update
 RUN apt-get install python3.6 -y
 RUN alias python=python3.6
@@ -28,6 +30,7 @@ RUN python3.6 -m pip install --upgrade pip
 RUN pip install -e ".[gpu]" --ignore-installed
 
 ENV PYTHONPATH ./ISR/:$PYTHONPATH
+ENV HOST_MODE GPU
 
 COPY scripts ./scripts
 COPY weights ./weights
