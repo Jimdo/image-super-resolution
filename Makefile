@@ -1,5 +1,3 @@
-include wl.deploy.Makefile
-
 proxy-build:
 	docker build -t isr-proxy -f ./nginx/Dockerfile ./nginx
 	docker tag isr-proxy registry.jimdo-platform.net/jimdo/jonathanmv/op/image-super-resolution-proxy
