@@ -1,0 +1,46 @@
+name: CD
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  deploy_stage:
+    name: Deploy stage to wl2
+    runs-on: ubuntu-latest
+    needs:
+      - build_and_push_docker_image
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Generate Wonderland 2 configuration
+        run: JIMDO_ENVIRONMENT=stage make wl2.gen
+
+      - name: Deploy to Wonderland 2
+        uses: Jimdo/wonderland2-deploy-github-action@main
+        with:
+          token: ${{ secrets.WONDERLAND_CI_GITHUB_TOKEN }}
+          bastion_key: ${{ secrets.WONDERLAND_CI_SSH_KEY }}
+          workspace: prod
+          wonderland_manifest: wonderland2.yaml
+
+  deploy_prod:
+    name: Deploy prod to wl2
+    runs-on: ubuntu-latest
+    needs:
+      - build_and_push_docker_image
+      - deploy_stage
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Generate Wonderland 2 configuration
+        run: JIMDO_ENVIRONMENT=prod make wl2.gen
+
+      - name: Deploy to Wonderland 2
+        uses: Jimdo/wonderland2-deploy-github-action@main
+        with:
+          token: ${{ secrets.WONDERLAND_CI_GITHUB_TOKEN }}
+          bastion_key: ${{ secrets.WONDERLAND_CI_SSH_KEY }}
+          workspace: prod
+          wonderland_manifest: wonderland2.yaml

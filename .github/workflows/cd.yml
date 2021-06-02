@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build_and_push_docker_image:
+    name: Build and push Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2.3.4
+
+      - name: Build docker image
+        run: make wl2.build
+
+      - name: Push docker image
+        run: make wl2.push
+        env:
+          WONDERLAND_GITHUB_TOKEN: ${{ secrets.WONDERLAND_GITHUB_TOKEN }}
+
+  create_release:
+    name: Create release
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    needs:
+      - build_and_push_docker_image
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: zendesk/action-create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.DEPLOYMENT_GITHUB_TOKEN }}
+        with:
+          auto_increment_type: major
