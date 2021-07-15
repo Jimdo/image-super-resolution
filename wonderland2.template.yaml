@@ -1,34 +1,25 @@
 apiVersion: "jimdo.com/v1"
 kind: WonderlandService
 metadata:
-  name: sharp-isr-server
-  namespace: ${NAMESPACE}
+  name: ${PROJECT_NAME}
   labels:
     scope: wonderland-test
 spec:
   scale: 2
   components:
-    - name: sharp-isr-server
+    - name: ${PROJECT_NAME}
       image: ${IMAGE}:${TAG}
       capacity:
-        memory: L
-        cpu: L
+        memory: XL
+        cpu: XXXL
       env:
         HOST_MODE: CPU
-      healthcheck:
-        liveness:
-          port: 8000
-          path: /health/
-          initialDelaySeconds: 30
-        readiness:
-          port: 8000
-          path: /health/
-          initialDelaySeconds: 30
+        PORT: "8000"
   http-endpoints:
-    - component: sharp-isr-server
+    - component: ${PROJECT_NAME}
       container-port: 8000
       public-domains:
         - ${COMPONENT_NAME}.jimdo-platform-eks.net
         - ${COMPONENT_NAME}.jimdo-platform.net
   notifications:
-    slack: "#wl2-alerts-stage"
+    slack: "#sharp-bots"
