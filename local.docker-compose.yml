@@ -13,6 +13,8 @@ services:
       KAFKA_AUTO_OFFSET_RESET: earliest
       KAFKA_ENABLE_AUTO_COMMIT: 0
       KAFKA_POLLING_TIMEOUT_SECONDS: 30
+      # An image took 1098sec to process with restricted resources (0.5CPU, 512M).
+      KAFKA_MAX_POLL_INTERVAL_MS: 3000000
       MODEL_NAME: noise-cancel
       MODEL_BY_PATCH_OF_SIZE: 30
       MODEL_BATCH_SIZE: 13
@@ -20,3 +22,8 @@ services:
       KAFKA_TOPICS: "user-image-uploaded"
     depends_on:
       - broker
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M

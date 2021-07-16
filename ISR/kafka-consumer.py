@@ -62,19 +62,15 @@ def dict_to_event(obj, ctx):
 
 
 def build_config():
-    servers = os.environ['KAFKA_BOOTSTRAP_SERVERS']
-    group_id = os.environ['KAFKA_GROUP_ID']
-    auto_offset_reset = os.environ['KAFKA_AUTO_OFFSET_RESET']
-    enable_auto_commit = os.environ['KAFKA_ENABLE_AUTO_COMMIT']
-
     string_deserializer = StringDeserializer('utf_8')
     avro_des = build_avro_deserializer()
 
     return {
-        'bootstrap.servers': servers,
-        'group.id': group_id,
-        'auto.offset.reset': auto_offset_reset,
-        'enable.auto.commit': enable_auto_commit,
+        'bootstrap.servers': os.environ['KAFKA_BOOTSTRAP_SERVERS'],
+        'group.id': os.environ['KAFKA_GROUP_ID'],
+        'auto.offset.reset': os.environ['KAFKA_AUTO_OFFSET_RESET'],
+        'enable.auto.commit': os.environ['KAFKA_ENABLE_AUTO_COMMIT'],
+        'max.poll.interval.ms': int(os.environ['KAFKA_MAX_POLL_INTERVAL_MS']),
         'key.deserializer': string_deserializer,
         'value.deserializer': avro_des,
     }
