@@ -141,9 +141,9 @@ def message_processor(msg):
     filepath = destination()
 
     model_name = os.environ['MODEL_NAME']
-    by_patch_of_size = os.environ['MODEL_BY_PATCH_OF_SIZE']
-    batch_size = os.environ['MODEL_BATCH_SIZE']
-    padding_size = os.environ['MODEL_PADDING_SIZE']
+    by_patch_of_size = int(os.environ['MODEL_BY_PATCH_OF_SIZE'])
+    batch_size = int(os.environ['MODEL_BATCH_SIZE'])
+    padding_size = int(os.environ['MODEL_PADDING_SIZE'])
 
     logger.info("running prediction")
     predict(url, model_name, filepath, by_patch_of_size, batch_size, padding_size)
