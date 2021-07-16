@@ -30,11 +30,16 @@ run-kafka-docker:
 		-e KAFKA_TOPICS=user-image-uploaded \
 		--rm -it kafka-isr
 
-run-kafka:
+run-kafka-local:
 	docker-compose -f kafka.docker-compose.yml \
 		-f local.docker-compose.yml \
 		run --rm kafka-sharp-worker
 
+run-kafka-dependencies:
+	docker-compose -f kafka.docker-compose.yml up
+
+stop-kafka-dependencies:
+	docker-compose -f kafka.docker-compose.yml down
 
 run:
 	docker run -v $(pwd)/data/:/home/isr/data -v $(pwd)/weights/:/home/isr/weights -v $(pwd)/config.yml:/home/isr/config.yml -it isr -p -d -c config.yml

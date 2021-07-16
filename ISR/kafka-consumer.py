@@ -44,12 +44,13 @@ def consume_loop(consumer, topics, process_message):
         logger.info("subscribing to %s topics..." % topics)
         consumer.subscribe(topics)
         logger.info("subscribed to %s topics..." % topics)
+        timeout = os.environ['KAFKA_POLLING_TIMEOUT_SECONDS']
 
         while running:
-            logger.info("polling...")
-            msg = consumer.poll(timeout=1.0)
+            logger.info("polling with %ss timeout..." % timeout)
+            msg = consumer.poll(timeout=float(timeout))
             if msg is None:
-                logger.info("no message found.")
+                logger.info("no messages found.")
                 continue
 
             if msg.error():
