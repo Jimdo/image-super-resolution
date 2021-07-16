@@ -1,6 +1,10 @@
-import sys
+# https://github.com/confluentinc/confluent-kafka-python/blob/master/examples/avro_consumer.py
 
-from confluent_kafka import Consumer, KafkaError, KafkaException
+from confluent_kafka import KafkaError, KafkaException, DeserializingConsumer
+from confluent_kafka.schema_registry import SchemaRegistryClient
+from confluent_kafka.schema_registry.avro import AvroDeserializer
+from confluent_kafka.serialization import StringDeserializer
+
 import os
 
 from ISR.utils.logger import get_logger
@@ -10,17 +14,69 @@ running = True
 logger = get_logger(__name__)
 
 
+def build_avro_deserializer():
+    logger.info("building deserializer...")
+    schema_str = """
+    {
+        "name": "user_image_uploaded_event",
+        "type": "record",
+        "fields": [
+            {"name": "url", "type": "string"}
+        ]
+    }
+    """
+
+    sr_conf = {'url': os.environ['KAFKA_SCHEMA_REGISTRY']}
+    schema_registry_client = SchemaRegistryClient(sr_conf)
+
+    avro_deserializer = AvroDeserializer(schema_str=schema_str,
+                                         schema_registry_client=schema_registry_client,
+                                         from_dict=dict_to_event)
+    logger.info('deserializer created.')
+    return avro_deserializer
+
+
+class UserImageUploadedEvent(object):
+    """
+    UserImageUploadedEvent record
+    Args:
+        url (str): url to access the image
+    """
+    def __init__(self, url=None):
+        self.url = url
+
+
+def dict_to_event(obj, ctx):
+    """
+    Converts object literal(dict) to a User instance.
+    Args:
+        obj (dict): Object literal(dict)
+        ctx (SerializationContext): Metadata pertaining to the serialization
+            operation.
+    """
+    if obj is None:
+        return None
+
+    logger.info('building event with url %s' % obj['url'])
+    return UserImageUploadedEvent(url=obj['url'])
+
+
 def build_config():
     servers = os.environ['KAFKA_BOOTSTRAP_SERVERS']
     group_id = os.environ['KAFKA_GROUP_ID']
     auto_offset_reset = os.environ['KAFKA_AUTO_OFFSET_RESET']
     enable_auto_commit = os.environ['KAFKA_ENABLE_AUTO_COMMIT']
 
+    string_deserializer = StringDeserializer('utf_8')
+    avro_des = build_avro_deserializer()
+
     return {
         'bootstrap.servers': servers,
         'group.id': group_id,
         'auto.offset.reset': auto_offset_reset,
-        'enable.auto.commit': enable_auto_commit
+        'enable.auto.commit': enable_auto_commit,
+        'key.deserializer': string_deserializer,
+        'value.deserializer': avro_des,
     }
 
 
@@ -34,7 +90,7 @@ def create_consumer():
     config = build_config()
     logger.info("creating consumer with config")
     logger.info(config)
-    new_consumer = Consumer(config)
+    new_consumer = DeserializingConsumer(config)
     logger.info("consumer created")
     return new_consumer
 
@@ -75,7 +131,13 @@ def consume_loop(consumer, topics, process_message):
 
 
 def message_processor(msg):
-    url = msg.image.url
+    event = msg.value()
+    if event is None:
+        logger.info("didn't get any event...")
+        return
+
+    url = event.url
+    logger.info("received url %s" % url)
     filepath = destination()
 
     model_name = os.environ['MODEL_NAME']

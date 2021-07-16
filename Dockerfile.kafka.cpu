@@ -30,6 +30,8 @@ RUN alias python=python3.6
 RUN python3.6 -m pip install --upgrade pip
 RUN pip install -e .
 
+RUN python3.6 -m pip install fastavro
+
 ENV PYTHONPATH ./ISR/:$PYTHONPATH
 ENV HOST_MODE CPU
 

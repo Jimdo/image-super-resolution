@@ -7,6 +7,7 @@ services:
 #      context: .
 #      dockerfile: Dockerfile.kafka.cpu
     environment:
+      KAFKA_SCHEMA_REGISTRY: "http://schema-registry:8081"
       KAFKA_BOOTSTRAP_SERVERS: "broker:9092"
       KAFKA_GROUP_ID: ist-kafka-consumer
       KAFKA_AUTO_OFFSET_RESET: earliest
