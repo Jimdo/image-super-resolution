@@ -1,0 +1,41 @@
+FROM tensorflow/tensorflow:1.13.1-py3
+# Tensorflow 1.13 uses Ubuntu 16.04
+
+# Install system packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      bzip2 \
+      g++ \
+      git \
+      graphviz \
+      libgl1-mesa-glx \
+      libhdf5-dev \
+      openmpi-bin \
+      screen \
+      wget && \
+    rm -rf /var/lib/apt/lists/* \
+    apt-get upgrade
+
+
+ENV TENSOR_HOME /home/isr
+WORKDIR $TENSOR_HOME
+
+COPY setup.py ./
+
+RUN apt-get update
+RUN apt-get install software-properties-common -y
+RUN add-apt-repository ppa:deadsnakes/ppa -y
+RUN apt-get update
+RUN apt-get install python3.6 -y
+RUN alias python=python3.6
+RUN python3.6 -m pip install --upgrade pip
+RUN pip install -e .
+
+ENV PYTHONPATH ./ISR/:$PYTHONPATH
+ENV HOST_MODE CPU
+
+COPY scripts ./scripts
+COPY weights ./weights
+COPY ISR ./ISR
+COPY config.yml ./
+
+CMD python3.6 /home/isr/ISR/kafka-consumer.py
