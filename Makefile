@@ -14,6 +14,28 @@ proxy-delete:
 build-server: Dockerfile.service.cpu
 	docker build -t serve-isr . -f Dockerfile.service.cpu
 
+build-kafka: Dockerfile.kafka.cpu
+	docker build -t kafka-isr . -f Dockerfile.kafka.cpu
+
+run-kafka-docker:
+	docker run \
+		-e KAFKA_BOOTSTRAP_SERVERS=broker:9092 \
+		-e KAFKA_GROUP_ID=ist-kafka-consumer \
+		-e KAFKA_AUTO_OFFSET_RESET=earliest \
+		-e KAFKA_ENABLE_AUTO_COMMIT=0 \
+		-e MODEL_NAME=noise-cancel \
+		-e MODEL_BY_PATCH_OF_SIZE=30 \
+		-e MODEL_BATCH_SIZE=13 \
+		-e MODEL_PADDING_SIZE=5 \
+		-e KAFKA_TOPICS=user-image-uploaded \
+		--rm -it kafka-isr
+
+run-kafka:
+	docker-compose -f kafka.docker-compose.yml \
+		-f local.docker-compose.yml \
+		run --rm kafka-sharp-worker
+
+
 run:
 	docker run -v $(pwd)/data/:/home/isr/data -v $(pwd)/weights/:/home/isr/weights -v $(pwd)/config.yml:/home/isr/config.yml -it isr -p -d -c config.yml
 
