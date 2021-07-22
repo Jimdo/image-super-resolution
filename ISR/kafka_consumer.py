@@ -1,5 +1,5 @@
 # https://github.com/confluentinc/confluent-kafka-python/blob/master/examples/avro_consumer.py
-
+import imageio
 from confluent_kafka import KafkaError, KafkaException, DeserializingConsumer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroDeserializer
@@ -7,6 +7,9 @@ from confluent_kafka.serialization import StringDeserializer
 
 import os
 
+from ISR.event_adapters import dict_to_user_image_uploaded_event
+from ISR.event_definitions import UserImageUploadedEvent
+from ISR.kafka_producer import SharpKafkaProducer
 from ISR.utils.logger import get_logger
 from ISR.app import predict, destination
 
@@ -31,34 +34,9 @@ def build_avro_deserializer():
 
     avro_deserializer = AvroDeserializer(schema_str=schema_str,
                                          schema_registry_client=schema_registry_client,
-                                         from_dict=dict_to_event)
+                                         from_dict=dict_to_user_image_uploaded_event)
     logger.info('deserializer created.')
     return avro_deserializer
-
-
-class UserImageUploadedEvent(object):
-    """
-    UserImageUploadedEvent record
-    Args:
-        url (str): url to access the image
-    """
-    def __init__(self, url=None):
-        self.url = url
-
-
-def dict_to_event(obj, ctx):
-    """
-    Converts object literal(dict) to a User instance.
-    Args:
-        obj (dict): Object literal(dict)
-        ctx (SerializationContext): Metadata pertaining to the serialization
-            operation.
-    """
-    if obj is None:
-        return None
-
-    logger.info('building event with url %s' % obj['url'])
-    return UserImageUploadedEvent(url=obj['url'])
 
 
 def build_config():
@@ -91,7 +69,7 @@ def create_consumer():
     return new_consumer
 
 
-def consume_loop(consumer, topics, process_message):
+def consume_loop(producer, consumer, topics, process_message):
     try:
         logger.info("subscribing to %s topics..." % topics)
         consumer.subscribe(topics)
@@ -115,7 +93,7 @@ def consume_loop(consumer, topics, process_message):
                     raise KafkaException(msg.error())
             else:
                 logger.info("message received. calling processing function...")
-                process_message(msg)
+                process_message(msg, producer)
                 logger.info("processing function completed. committing offset...")
                 consumer.commit(asynchronous=False)
                 logger.info("offset committed.")
@@ -126,27 +104,39 @@ def consume_loop(consumer, topics, process_message):
         logger.info("consumer closed.")
 
 
-def message_processor(msg):
+def message_processor(msg, producer: SharpKafkaProducer):
     event = msg.value()
     if event is None:
         logger.info("didn't get any event...")
         return
 
     url = event.url
+    logger.info("found url to process %s" % url)
+    image_path = process_image(url)
+    logger.info("image ready at %s" % image_path)
+    processed_bytes = open(image_path, 'rb').read()
+    logger.info("producing next event...")
+    producer.produce(original_url=url, processed_bytes=processed_bytes)
+    logger.info("event produced. message processed.")
+
+
+def process_image(url):
     logger.info("received url %s" % url)
     filepath = destination()
-
     model_name = os.environ['MODEL_NAME']
     by_patch_of_size = int(os.environ['MODEL_BY_PATCH_OF_SIZE'])
     batch_size = int(os.environ['MODEL_BATCH_SIZE'])
     padding_size = int(os.environ['MODEL_PADDING_SIZE'])
-
     logger.info("running prediction")
     predict(url, model_name, filepath, by_patch_of_size, batch_size, padding_size)
+    return filepath
 
 
 if __name__ == "__main__":
     logger.info("starting app...")
-    kafka_topics = os.environ['KAFKA_TOPICS'].split(',')
+    # process_image('https://jimdo-storage.freetls.fastly.net/image/188163642/dda9a2c3-f1a1-49e8-a773-d66051733cd9.jpg')
+
+    kafka_topics = os.environ['KAFKA_TOPIC_USER_IMAGE_UPLOADED'].split(',')
     kafka_consumer = create_consumer()
-    consume_loop(kafka_consumer, kafka_topics, message_processor)
+    kafka_producer = SharpKafkaProducer(topic=os.environ['KAFKA_TOPIC_USER_IMAGE_PROCESSED'])
+    consume_loop(kafka_producer, kafka_consumer, kafka_topics, message_processor)

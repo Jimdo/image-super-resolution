@@ -3,9 +3,9 @@ version: '3'
 services:
   kafka-sharp-worker:
     image: kafka-isr
-#    build:
-#      context: .
-#      dockerfile: Dockerfile.kafka.cpu
+    build:
+      context: .
+      dockerfile: Dockerfile.kafka.cpu
     environment:
       KAFKA_SCHEMA_REGISTRY: "http://schema-registry:8081"
       KAFKA_BOOTSTRAP_SERVERS: "broker:9092"
@@ -14,16 +14,23 @@ services:
       KAFKA_ENABLE_AUTO_COMMIT: 0
       KAFKA_POLLING_TIMEOUT_SECONDS: 30
       # An image took 1098sec to process with restricted resources (0.5CPU, 512M).
+      # KAFKA_MAX_POLL_INTERVAL_MS is set to ~3x the processing of that image.
       KAFKA_MAX_POLL_INTERVAL_MS: 3000000
       MODEL_NAME: noise-cancel
       MODEL_BY_PATCH_OF_SIZE: 30
       MODEL_BATCH_SIZE: 13
       MODEL_PADDING_SIZE: 5
-      KAFKA_TOPICS: "user-image-uploaded"
+      KAFKA_TOPIC_USER_IMAGE_UPLOADED: "user-image-uploaded"
+      KAFKA_TOPIC_USER_IMAGE_PROCESSED: "user-image-processed"
     depends_on:
       - broker
-    deploy:
-      resources:
-        limits:
-          cpus: '0.50'
-          memory: 512M
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: '0.50'
+#          memory: 512M
+#    volumes:
+#      - kafka-isr-volume:/home/kafka-isr-volume
+#
+#volumes:
+#  kafka-isr-volume:

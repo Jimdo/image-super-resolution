@@ -40,4 +40,4 @@ COPY weights ./weights
 COPY ISR ./ISR
 COPY config.yml ./
 
-CMD python3.6 /home/isr/ISR/kafka-consumer.py
+CMD python3.6 /home/isr/ISR/kafka_consumer.py

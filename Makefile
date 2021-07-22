@@ -30,12 +30,12 @@ run-kafka-docker:
 		-e KAFKA_TOPICS=user-image-uploaded \
 		--rm -it kafka-isr
 
-run-kafka-local:
+run-kafka-local: build-kafka
 	docker-compose -f kafka.docker-compose.yml \
 		-f local.docker-compose.yml \
 		run --rm kafka-sharp-worker
 
-run-kafka-dependencies:
+run-kafka-dependencies: stop-kafka-dependencies
 	docker-compose -f kafka.docker-compose.yml up
 
 stop-kafka-dependencies:
