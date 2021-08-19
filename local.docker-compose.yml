@@ -19,18 +19,10 @@ services:
       MODEL_NAME: noise-cancel
       MODEL_BY_PATCH_OF_SIZE: 30
       MODEL_BATCH_SIZE: 13
-      MODEL_PADDING_SIZE: 5
-      KAFKA_TOPIC_USER_IMAGE_UPLOADED: "user-image-uploaded"
-      KAFKA_TOPIC_USER_IMAGE_PROCESSED: "user-image-processed"
+      MODEL_PADDING_SIZE: 11
+      KAFKA_TOPIC_USER_IMAGE_TO_PROCESS: "dev-sharp-images-to-process"
+      KAFKA_TOPIC_USER_IMAGE_PROCESSED: "dev-sharp-processed-images"
     depends_on:
       - broker
-#    deploy:
-#      resources:
-#        limits:
-#          cpus: '0.50'
-#          memory: 512M
-#    volumes:
-#      - kafka-isr-volume:/home/kafka-isr-volume
-#
-#volumes:
-#  kafka-isr-volume:
+    volumes:
+      - ./data:/home/isr/data

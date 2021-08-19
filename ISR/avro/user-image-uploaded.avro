@@ -1,0 +1,41 @@
+{
+  "namespace": "com.jimdo.storage.image.avro",
+  "name": "UserImageUploaded",
+  "type": "record",
+  "fields": [
+    {
+      "name": "id",
+      "type": "int"
+    },
+    {
+      "name": "website_id",
+      "type": "string",
+      "logicalType": "UUID"
+    },
+    {
+      "name": "user_id",
+      "type": "string",
+      "logicalType": "UUID"
+    },
+    {
+      "name": "created_at",
+      "type": "string"
+    },
+    {
+      "name": "url",
+      "type": "string"
+    },
+    {
+      "name": "format",
+      "type": "string"
+    },
+    {
+      "name": "width",
+      "type": "int"
+    },
+    {
+      "name": "height",
+      "type": "int"
+    }
+  ]
+}

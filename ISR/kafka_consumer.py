@@ -1,5 +1,4 @@
 # https://github.com/confluentinc/confluent-kafka-python/blob/master/examples/avro_consumer.py
-import imageio
 from confluent_kafka import KafkaError, KafkaException, DeserializingConsumer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroDeserializer
@@ -16,23 +15,23 @@ from ISR.app import predict, destination
 running = True
 logger = get_logger(__name__)
 
+AVRO_PATH = os.path.join(os.path.dirname(__file__), 'avro')
+
+
+def __load_user_image_uploaded_schema():
+    schema_path = os.path.join(AVRO_PATH, 'user-image-uploaded.avro')
+
+    with open(schema_path) as f:
+        return f.read()
+
 
 def build_avro_deserializer():
     logger.info("building deserializer...")
-    schema_str = """
-    {
-        "name": "user_image_uploaded_event",
-        "type": "record",
-        "fields": [
-            {"name": "url", "type": "string"}
-        ]
-    }
-    """
 
     sr_conf = {'url': os.environ['KAFKA_SCHEMA_REGISTRY']}
     schema_registry_client = SchemaRegistryClient(sr_conf)
 
-    avro_deserializer = AvroDeserializer(schema_str=schema_str,
+    avro_deserializer = AvroDeserializer(schema_str=__load_user_image_uploaded_schema(),
                                          schema_registry_client=schema_registry_client,
                                          from_dict=dict_to_user_image_uploaded_event)
     logger.info('deserializer created.')
@@ -136,7 +135,7 @@ if __name__ == "__main__":
     logger.info("starting app...")
     # process_image('https://jimdo-storage.freetls.fastly.net/image/188163642/dda9a2c3-f1a1-49e8-a773-d66051733cd9.jpg')
 
-    kafka_topics = os.environ['KAFKA_TOPIC_USER_IMAGE_UPLOADED'].split(',')
+    kafka_topics = os.environ['KAFKA_TOPIC_USER_IMAGE_TO_PROCESS'].split(',')
     kafka_consumer = create_consumer()
     kafka_producer = SharpKafkaProducer(topic=os.environ['KAFKA_TOPIC_USER_IMAGE_PROCESSED'])
     consume_loop(kafka_producer, kafka_consumer, kafka_topics, message_processor)
