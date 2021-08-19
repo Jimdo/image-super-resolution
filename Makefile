@@ -1,25 +1,41 @@
+include local.Makefile
 
-build-kafka: Dockerfile.kafka.cpu
-	docker build -t kafka-isr . -f Dockerfile.kafka.cpu
+SERVICE_NAME								= sharp-worker-isr-processor
+REGISTRY                                    = registry.jimdo-platform.net
+IMAGE                                       = $(REGISTRY)/jimdo/sharp/$(SERVICE_NAME)
+TAG                                     	= $(shell git describe --always --dirty)
+IMAGE_TAG                                  	= $(IMAGE):$(TAG)
+WL                                          = ./wl
+VERSION                                     = $(TAG)
 
-run-kafka-local: build-kafka
-	docker-compose -f kafka.docker-compose.yml \
-		-f local.docker-compose.yml \
-		run --rm kafka-sharp-worker
+export TAG
+export ENV
+export VERSION
+export IMAGE_TAG
+export SERVICE_NAME
 
-run-kafka-dependencies: stop-kafka-dependencies
-	docker-compose -f kafka.docker-compose.yml up
+guard-%:
+	@ if [ "${${*}}" = "" ]; then \
+	    echo "Environment variable $* not set"; \
+	    exit 1; \
+	fi
 
-stop-kafka-dependencies:
-	docker-compose -f kafka.docker-compose.yml down
+wl:
+	curl -sSLfo $(WL) https://downloads.jimdo-platform.net/wl/latest/wl_latest_$(shell uname -s | tr A-Z a-z)_$(shell uname -m | sed "s/x86_64/amd64/")
+	chmod +x $(WL)
 
-run:
-	docker run -v $(pwd)/data/:/home/isr/data -v $(pwd)/weights/:/home/isr/weights -v $(pwd)/config.yml:/home/isr/config.yml -it isr -p -d -c config.yml
+build: Dockerfile.kafka.cpu
+	docker build -t $(IMAGE_TAG) . -f Dockerfile.kafka.cpu
 
-produce-records:
-	docker-compose -f kafka.docker-compose.yml exec -T schema-registry \
-		kafka-avro-console-producer \
-		  --topic dev-sharp-images-to-process \
-		  --bootstrap-server broker:29092 \
-		  --property value.schema="$$(< ISR/avro/user-image-uploaded.avro)" \
-		  < ./scripts/user-image-uploaded-records.json
+pull: wl
+	$(WL) docker pull $(IMAGE_TAG)
+
+push: wl
+	$(WL) docker push $(IMAGE_TAG)
+
+build-and-push: build push
+
+deploy: $(WL) guard-ENV
+	$(WL) deploy $(SERVICE_NAME)-$(ENV) -f ./wonderland.yaml
+
+.PHONY: build test push pull deploy build-and-push

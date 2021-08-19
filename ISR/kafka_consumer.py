@@ -28,7 +28,7 @@ def __load_user_image_uploaded_schema():
 def build_avro_deserializer():
     logger.info("building deserializer...")
 
-    sr_conf = {'url': os.environ['KAFKA_SCHEMA_REGISTRY']}
+    sr_conf = {'url': os.environ['KAFKA_SCHEMA_REGISTRY_URL']}
     schema_registry_client = SchemaRegistryClient(sr_conf)
 
     avro_deserializer = AvroDeserializer(schema_str=__load_user_image_uploaded_schema(),
@@ -44,10 +44,10 @@ def build_config():
 
     return {
         'bootstrap.servers': os.environ['KAFKA_BOOTSTRAP_SERVERS'],
-        'group.id': os.environ['KAFKA_GROUP_ID'],
-        'auto.offset.reset': os.environ['KAFKA_AUTO_OFFSET_RESET'],
-        'enable.auto.commit': os.environ['KAFKA_ENABLE_AUTO_COMMIT'],
-        'max.poll.interval.ms': int(os.environ['KAFKA_MAX_POLL_INTERVAL_MS']),
+        'group.id': os.environ['KAFKA_CONSUMER_GROUP_ID'],
+        'auto.offset.reset': os.environ['KAFKA_CONSUMER_AUTO_OFFSET_RESET'],
+        'enable.auto.commit': os.environ['KAFKA_CONSUMER_ENABLE_AUTO_COMMIT'],
+        'max.poll.interval.ms': int(os.environ['KAFKA_CONSUMER_MAX_POLL_INTERVAL_MS']),
         'key.deserializer': string_deserializer,
         'value.deserializer': avro_des,
     }
@@ -73,7 +73,7 @@ def consume_loop(producer, consumer, topics, process_message):
         logger.info("subscribing to %s topics..." % topics)
         consumer.subscribe(topics)
         logger.info("subscribed to %s topics..." % topics)
-        timeout = os.environ['KAFKA_POLLING_TIMEOUT_SECONDS']
+        timeout = os.environ['KAFKA_CONSUMER_POLLING_TIMEOUT_SECONDS']
 
         while running:
             logger.info("polling with %ss timeout..." % timeout)

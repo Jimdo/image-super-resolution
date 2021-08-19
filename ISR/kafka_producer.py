@@ -29,7 +29,7 @@ def build_avro_serializer():
     }
     """
 
-    sr_conf = {'url': os.environ['KAFKA_SCHEMA_REGISTRY']}
+    sr_conf = {'url': os.environ['KAFKA_SCHEMA_REGISTRY_URL']}
     schema_registry_client = SchemaRegistryClient(sr_conf)
 
     avro_serializer = AvroSerializer(schema_str=schema_str,

@@ -7,19 +7,19 @@ services:
       context: .
       dockerfile: Dockerfile.kafka.cpu
     environment:
-      KAFKA_SCHEMA_REGISTRY: "http://schema-registry:8081"
+      KAFKA_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
       KAFKA_BOOTSTRAP_SERVERS: "broker:9092"
-      KAFKA_GROUP_ID: ist-kafka-consumer
-      KAFKA_AUTO_OFFSET_RESET: earliest
-      KAFKA_ENABLE_AUTO_COMMIT: 0
-      KAFKA_POLLING_TIMEOUT_SECONDS: 30
+      KAFKA_CONSUMER_GROUP_ID: ist-kafka-consumer
+      KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+      KAFKA_CONSUMER_ENABLE_AUTO_COMMIT: 0
+      KAFKA_CONSUMER_POLLING_TIMEOUT_SECONDS: 30
       # An image took 1098sec to process with restricted resources (0.5CPU, 512M).
-      # KAFKA_MAX_POLL_INTERVAL_MS is set to ~3x the processing of that image.
-      KAFKA_MAX_POLL_INTERVAL_MS: 3000000
+      # KAFKA_CONSUMER_MAX_POLL_INTERVAL_MS is set to ~3x the processing of that image.
+      KAFKA_CONSUMER_MAX_POLL_INTERVAL_MS: 3000000
       MODEL_NAME: noise-cancel
       MODEL_BY_PATCH_OF_SIZE: 30
       MODEL_BATCH_SIZE: 13
-      MODEL_PADDING_SIZE: 11
+      MODEL_PADDING_SIZE: 13
       KAFKA_TOPIC_USER_IMAGE_TO_PROCESS: "dev-sharp-images-to-process"
       KAFKA_TOPIC_USER_IMAGE_PROCESSED: "dev-sharp-processed-images"
     depends_on:
