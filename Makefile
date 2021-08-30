@@ -1,4 +1,5 @@
 include local.Makefile
+include infra.Makefile
 
 SERVICE_NAME								= sharp-worker-isr-processor
 REGISTRY                                    = registry.jimdo-platform.net

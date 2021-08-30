@@ -158,3 +158,6 @@ mkdocs/docs/train/
 *private
 *rdsn.py
 *rrdsn.py
+
+terraform
+infrastructure/.terraform
