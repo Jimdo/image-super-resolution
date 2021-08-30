@@ -31,6 +31,8 @@ components:
       MODEL_BY_PATCH_OF_SIZE: 30
       MODEL_BATCH_SIZE: 13
       MODEL_PADDING_SIZE: 13
+      AWS_DEFAULT_PROFILE: ecs
+      AWS_SDK_LOAD_CONFIG: "true"
     logging:
       types:
         - json

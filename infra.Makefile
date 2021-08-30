@@ -10,3 +10,7 @@ terraform:
 infrastructure-plan: guard-ENV terraform wl
 	cd infrastructure && ../$(TERRAFORM) init -input=false \
 	&& TF_WORKSPACE=$(ENV) ../$(TERRAFORM) plan -input=false
+
+infrastructure-apply: guard-ENV terraform wl
+	cd infrastructure && ../$(TERRAFORM) init -input=false \
+	&& TF_WORKSPACE=$(ENV) ../$(TERRAFORM) apply -input=false -auto-approve=true

@@ -1,3 +1,11 @@
+terraform {
+  backend "s3" {
+    bucket = "jimdo-sharp-processed-images-terraform-state-bucket"
+    key    = "terraform.tfstate"
+    region = "eu-west-1"
+  }
+}
+
 resource "aws_s3_bucket" "sharp_processed_images_bucket" {
   provider = aws
   bucket   = "${var.app_name}-${terraform.workspace}"
@@ -66,4 +74,13 @@ resource "aws_iam_policy_attachment" "sharp_processed_images_bucket_policy_attac
   name = "${var.app_name}-${terraform.workspace}-bucket-policy-attachment"
   roles = ["${aws_iam_role.sharp_processed_images_bucket_iam_role.name}"]
   policy_arn = "${aws_iam_policy.sharp_processed_images_bucket_policy.arn}"
+}
+
+resource "local_file" "aws_config_file" {
+  filename = "${path.module}/aws_config.txt"
+  content = <<-EOT
+    [profile ecs]
+    role_arn = ${aws_iam_role.sharp_processed_images_bucket_iam_role.arn}
+    credential_source = EcsContainer
+  EOT
 }

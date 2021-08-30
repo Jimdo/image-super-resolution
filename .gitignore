@@ -161,3 +161,4 @@ mkdocs/docs/train/
 
 terraform
 infrastructure/.terraform
+infrastructure/aws_config.txt

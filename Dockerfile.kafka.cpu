@@ -40,4 +40,7 @@ COPY weights ./weights
 COPY ISR ./ISR
 COPY config.yml ./
 
+RUN mkdir ~/.aws
+COPY ./infrastructure/aws_config.txt ~/.aws/config
+
 CMD python3.6 /home/isr/ISR/kafka_consumer.py

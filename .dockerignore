@@ -5,3 +5,4 @@
 !weights/all/*
 !config.yml
 !setup.py
+!infrastructure/aws_config.txt
