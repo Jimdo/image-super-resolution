@@ -7,17 +7,10 @@ terraform:
 	@rm -f terraform.zip
 	@echo 'done'
 
-infrastructure-plan: guard-ENV terraform
+infrastructure-plan: terraform
 	cd infrastructure && ../$(TERRAFORM) init -input=false \
-	&& TF_WORKSPACE=$(ENV) ../$(TERRAFORM) plan -input=false
+	&& ../$(TERRAFORM) plan -input=false
 
-infrastructure-apply: guard-ENV terraform
+infrastructure-apply: terraform
 	cd infrastructure && ../$(TERRAFORM) init -input=false \
-	&& TF_WORKSPACE=$(ENV) ../$(TERRAFORM) apply -input=false -auto-approve=true
-
-infrastructure-setvars: guard-ENV terraform
-	cd infrastructure && \
-	BUCKET=`TF_WORKSPACE=$(ENV) ../$(TERRAFORM) output bucket` \
-	REGION=`TF_WORKSPACE=$(ENV) ../$(TERRAFORM) output region` \
-	ROLE=`TF_WORKSPACE=$(ENV) ../$(TERRAFORM) output iam_role` \
-	eval 'echo "$$BUCKET $$REGION $$ROLE"'
+	&& ../$(TERRAFORM) apply -input=false -auto-approve=true

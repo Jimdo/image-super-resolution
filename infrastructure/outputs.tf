@@ -2,8 +2,12 @@ output "region" {
   value = var.default_region
 }
 
-output "bucket" {
-  value = aws_s3_bucket.sharp_processed_images_bucket.bucket
+output "stage-bucket" {
+  value = aws_s3_bucket.sharp_processed_images_bucket_stage.bucket
+}
+
+output "prod-bucket" {
+  value = aws_s3_bucket.sharp_processed_images_bucket_prod.bucket
 }
 
 output "iam_role" {
