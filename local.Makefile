@@ -4,7 +4,7 @@ build-kafka: Dockerfile.kafka.cpu
 run-kafka-local: build-kafka
 	docker-compose -f kafka.docker-compose.yml \
 		-f local.docker-compose.yml \
-		run --rm kafka-sharp-worker
+		run -e AWS_SECRET_ACCESS_KEY -e AWS_ACCESS_KEY_ID --rm kafka-sharp-worker
 
 run-kafka-dependencies: stop-kafka-dependencies
 	docker-compose -f kafka.docker-compose.yml up

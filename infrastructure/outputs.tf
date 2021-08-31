@@ -3,7 +3,7 @@ output "region" {
 }
 
 output "bucket" {
-  value = "s3://${aws_s3_bucket.sharp_processed_images_bucket.bucket}"
+  value = aws_s3_bucket.sharp_processed_images_bucket.bucket
 }
 
 output "iam_role" {

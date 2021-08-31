@@ -2,15 +2,12 @@ import os
 from importlib import import_module
 from pathlib import Path
 from time import time
-from multiprocessing import Process
 import imageio
-from flask import Flask, request, send_from_directory, abort
 import yaml
 import string
 from ISR.utils.logger import get_logger
 from ISR.utils.utils import get_timestamp, get_config_from_weights
 import random
-from urllib.parse import unquote
 
 
 def check_origin(url):
@@ -34,7 +31,11 @@ def is_gpu():
     return os.environ['HOST_MODE'] == 'GPU'
 
 
-def predict(url, model_name, destination_path, by_patch_of_size, batch_size, padding_size):
+logger = get_logger(__name__)
+logger.info('Started in ' + ('GPU' if is_gpu() else 'CPU') + ' mode')
+
+
+def predict(url, destination_path, model_name, by_patch_of_size, batch_size, padding_size):
     physical_devices = []
     if is_gpu():
         import tensorflow as tf
@@ -79,52 +80,16 @@ def destination():
 
 
 def run(url, gen, destination_path, by_patch_of_size, batch_size, padding_size):
-    logger = get_logger(__name__)
     logger.info('Downloading file\n > {}'.format(url))
     img = imageio.imread(url)
-    logger.info('Result will be saved in\n > {}'.format(destination_path))
-    start = time()
-    sr_img = gen.predict(img, by_patch_of_size=by_patch_of_size, batch_size=batch_size, padding_size=padding_size)
-    end = time()
     logger.info('size: {}x{}'.format(img.shape[1], img.shape[0]))
     logger.info('by_patch_of_size: {}'.format(by_patch_of_size))
     logger.info('batch_size: {}'.format(batch_size))
     logger.info('padding_size: {}'.format(padding_size))
+    logger.info('Result will be saved in\n > {}'.format(destination_path))
+    start = time()
+    sr_img = gen.predict(img, by_patch_of_size=by_patch_of_size, batch_size=batch_size, padding_size=padding_size)
+    end = time()
     logger.info('Elapsed time: {}s'.format(end - start))
     imageio.imwrite(destination_path, sr_img)
     return destination_path
-
-
-app = Flask(__name__)
-logger = get_logger(__name__)
-logger.info('Started in ' + ('GPU' if is_gpu() else 'CPU') + ' mode')
-
-
-@app.route('/magnify')
-def magnify():
-    logger = get_logger(__name__)
-    url = unquote(request.args.get('image_url'))
-    if check_origin(url) is False:
-        logger.info('processing denied: ' + url)
-        return abort(403)
-
-    model_name = request.args.get('model') or 'noise-cancel'
-    by_patch_of_size = int(request.args.get('by_patch_of_size') or 0) or None
-    batch_size = int(request.args.get('batch_size') or 10)
-    padding_size = int(request.args.get('padding_size') or 2)
-    filepath = destination()
-    logger.info('starting prediction in ' + ('GPU' if is_gpu() else 'CPU') + ' mode')
-    p = Process(target=predict, args=(url, model_name, filepath, by_patch_of_size, batch_size, padding_size))
-    p.start()
-    p.join()
-    directory = str(filepath.parent.absolute())
-    filename = str(filepath.name)
-    logger.info('sending prediction')
-
-    return send_from_directory(directory, filename, as_attachment=True, attachment_filename='sharpened.jpg')
-
-
-@app.route('/')
-@app.route('/health')
-def health_check():
-    return 'OK'

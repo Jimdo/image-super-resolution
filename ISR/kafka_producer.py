@@ -8,31 +8,32 @@ from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
 
 from ISR.event_adapters import user_image_processed_event_to_dict
-from ISR.event_definitions import UserImageProcessedEvent
+from ISR.event_definitions import ImageSuperResolutionImageProcessedEvent
 from ISR.utils.logger import get_logger
 
 import os
 
 logger = get_logger(__name__)
 
+AVRO_PATH = os.path.join(os.path.dirname(__file__), 'avro')
+
+
+def __load_schemas():
+    # Please notice that the schema has a property called user_image
+    # that property is a copy of the schema specified in user-image-uploaded.avro
+    # I was unable to load both schemas and reference one from the other.
+    schema_path = os.path.join(AVRO_PATH, 'image-super-resolution-processed-image.avro')
+    with open(schema_path) as f:
+        return f.read()
+
 
 def build_avro_serializer():
     logger.info("building serializer...")
-    schema_str = """
-    {
-        "name": "user_image_processed_event",
-        "type": "record",
-        "fields": [
-            {"name": "original_url", "type": "string"},
-            {"name": "processed_bytes", "type": "bytes"}
-        ]
-    }
-    """
 
     sr_conf = {'url': os.environ['KAFKA_SCHEMA_REGISTRY_URL']}
     schema_registry_client = SchemaRegistryClient(sr_conf)
 
-    avro_serializer = AvroSerializer(schema_str=schema_str,
+    avro_serializer = AvroSerializer(schema_str=__load_schemas(),
                                      schema_registry_client=schema_registry_client,
                                      to_dict=user_image_processed_event_to_dict)
     logger.info('serializer created.')
@@ -87,8 +88,9 @@ class SharpKafkaProducer:
         logger.info('producer created.')
         self.topic = topic
 
-    def produce(self, original_url, processed_bytes):
-        user_image_processed_event = UserImageProcessedEvent(original_url=original_url, processed_bytes=processed_bytes)
+    def produce(self, user_image_processed_event):
+        logger.info('producing record...')
+        logger.info(user_image_processed_event_to_dict(user_image_processed_event, None))
         try:
             self.producer.produce(topic=self.topic, key=str(uuid4()),
                                   value=user_image_processed_event,

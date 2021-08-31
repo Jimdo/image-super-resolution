@@ -1,0 +1,95 @@
+{
+  "namespace": "com.jimdo.storage.image.avro",
+  "name": "ImageSuperResolutionImageProcessed",
+  "type": "record",
+  "fields": [
+    {
+      "name": "original_url",
+      "type": "string"
+    },
+    {
+      "name": "bucket",
+      "type": "string"
+    },
+    {
+      "name": "object_key",
+      "type": "string"
+    },
+    {
+      "name": "created_at",
+      "type": "string"
+    },
+    {
+      "name": "processing_time_in_ms",
+      "type": "int"
+    },
+    {
+      "name": "processing_configuration",
+      "type": {
+        "type": "record",
+        "name": "ImageSuperResolutionConfiguration",
+        "fields": [
+          {
+            "name": "model_name",
+            "type": "string"
+          },
+          {
+            "name": "by_patch_of_size",
+            "type": "int"
+          },
+          {
+            "name": "batch_size",
+            "type": "int"
+          },
+          {
+            "name": "padding_size",
+            "type": "int"
+          }
+        ]
+      }
+    },
+    {
+      "name": "user_image",
+      "type": {
+        "type": "record",
+        "name": "UserImageUploaded",
+        "fields": [
+          {
+            "name": "id",
+            "type": "int"
+          },
+          {
+            "name": "website_id",
+            "type": "string",
+            "logicalType": "UUID"
+          },
+          {
+            "name": "user_id",
+            "type": "string",
+            "logicalType": "UUID"
+          },
+          {
+            "name": "created_at",
+            "type": "string"
+          },
+          {
+            "name": "url",
+            "type": "string"
+          },
+          {
+            "name": "format",
+            "type": "string"
+          },
+          {
+            "name": "width",
+            "type": "int"
+          },
+          {
+            "name": "height",
+            "type": "int"
+          }
+        ]
+      }
+    }
+  ]
+}

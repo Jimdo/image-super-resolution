@@ -22,6 +22,7 @@ services:
       MODEL_PADDING_SIZE: 13
       KAFKA_TOPIC_USER_IMAGE_TO_PROCESS: "dev-sharp-images-to-process"
       KAFKA_TOPIC_USER_IMAGE_PROCESSED: "dev-sharp-processed-images"
+      PROCESSED_IMAGES_BUCKET: "jimdo-sharp-processed-images-stage"
     depends_on:
       - broker
     volumes:

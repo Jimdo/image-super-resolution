@@ -1,13 +1,18 @@
 # https://github.com/confluentinc/confluent-kafka-python/blob/master/examples/avro_consumer.py
+from datetime import datetime
+from time import time
+
 from confluent_kafka import KafkaError, KafkaException, DeserializingConsumer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroDeserializer
 from confluent_kafka.serialization import StringDeserializer
 
 import os
+import hashlib
+import boto3
 
 from ISR.event_adapters import dict_to_user_image_uploaded_event
-from ISR.event_definitions import UserImageUploadedEvent
+from ISR.event_definitions import ImageSuperResolutionConfiguration, ImageSuperResolutionImageProcessedEvent
 from ISR.kafka_producer import SharpKafkaProducer
 from ISR.utils.logger import get_logger
 from ISR.app import predict, destination
@@ -19,6 +24,11 @@ AVRO_PATH = os.path.join(os.path.dirname(__file__), 'avro')
 
 
 def __load_user_image_uploaded_schema():
+    # Please notice that this schema is used by the one specified in
+    # image-super-resolution-processed-image.avro
+    # I was unable to load both schemas and reference one from the other.
+    # So if you make changes to the user-iamge-uploaded.avro schema
+    # please update the other schema.
     schema_path = os.path.join(AVRO_PATH, 'user-image-uploaded.avro')
 
     with open(schema_path) as f:
@@ -103,6 +113,15 @@ def consume_loop(producer, consumer, topics, process_message):
         logger.info("consumer closed.")
 
 
+def get_processing_configuration():
+    return ImageSuperResolutionConfiguration(
+        model_name=os.environ['MODEL_NAME'],
+        by_patch_of_size=int(os.environ['MODEL_BY_PATCH_OF_SIZE']),
+        batch_size=int(os.environ['MODEL_BATCH_SIZE']),
+        padding_size=int(os.environ['MODEL_PADDING_SIZE'])
+    )
+
+
 def message_processor(msg, producer: SharpKafkaProducer):
     event = msg.value()
     if event is None:
@@ -110,24 +129,46 @@ def message_processor(msg, producer: SharpKafkaProducer):
         return
 
     url = event.url
+    object_key = hashlib.md5(url.encode()).hexdigest()
+    bucket = os.environ['PROCESSED_IMAGES_BUCKET']
+
     logger.info("found url to process %s" % url)
-    image_path = process_image(url)
+    processing_configuration = get_processing_configuration()
+    start = time()
+    image_path = process_image(url, processing_configuration)
+    end = time()
+    processing_time_in_ms = int((end - start)*1000)
+
     logger.info("image ready at %s" % image_path)
-    processed_bytes = open(image_path, 'rb').read()
+    logger.info("uploading image to s3://{}/{}...".format(bucket, object_key))
+    store_image(image_path, bucket, object_key)
     logger.info("producing next event...")
-    producer.produce(original_url=url, processed_bytes=processed_bytes)
+    user_image_processed_event = ImageSuperResolutionImageProcessedEvent(
+        original_url=url, bucket=bucket, object_key=object_key,
+        processing_time_in_ms=processing_time_in_ms,
+        created_at=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        user_image=event, processing_configuration=processing_configuration
+    )
+    producer.produce(user_image_processed_event)
     logger.info("event produced. message processed.")
 
 
-def process_image(url):
+def store_image(image_path, bucket, object_key):
+    s3 = boto3.resource('s3')
+    with open(image_path, "rb") as data:
+        s3.Bucket(bucket).put_object(Key=object_key, Body=data)
+
+
+def process_image(url, processing_configuration):
     logger.info("received url %s" % url)
     filepath = destination()
-    model_name = os.environ['MODEL_NAME']
-    by_patch_of_size = int(os.environ['MODEL_BY_PATCH_OF_SIZE'])
-    batch_size = int(os.environ['MODEL_BATCH_SIZE'])
-    padding_size = int(os.environ['MODEL_PADDING_SIZE'])
     logger.info("running prediction")
-    predict(url, model_name, filepath, by_patch_of_size, batch_size, padding_size)
+    predict(url, filepath,
+            processing_configuration.model_name,
+            processing_configuration.by_patch_of_size,
+            processing_configuration.batch_size,
+            processing_configuration.padding_size)
+
     return filepath
 
 
