@@ -63,7 +63,8 @@ resource "aws_iam_role" "sharp_processed_images_bucket_iam_role" {
         Effect = "Allow"
         Sid    = ""
         Principal = {
-          Service = "ecs-tasks.amazonaws.com"
+          # Taken from https://github.com/Jimdo/sre-wonderland-mirror-roles/blob/b0acec9d52a657d6f47926c9e2d6611ff5666129/mirror-roles-prod.yaml#L26
+          AWS = "arn:aws:iam::691344588897:role/wonderland-mirror-role-sharp-image-super-resolution-jimdo"
         }
       },
     ]

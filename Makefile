@@ -34,9 +34,13 @@ pull: wl
 push: wl
 	$(WL) docker push $(IMAGE_TAG)
 
+print-tag:
+	@echo "$(IMAGE_TAG)"
+
 build-and-push: build push
 
 deploy: $(WL) guard-ENV
+	IAM_ROLE=`TF_WORKSPACE=$(ENV) ../$(TERRAFORM) output iam_role` \
 	$(WL) deploy $(SERVICE_NAME)-$(ENV) -f ./wonderland.yaml
 
 .PHONY: build test push pull deploy build-and-push
