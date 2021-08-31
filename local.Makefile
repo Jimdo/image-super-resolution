@@ -2,11 +2,12 @@ build-kafka: Dockerfile.kafka.cpu
 	docker build -t kafka-isr . -f Dockerfile.kafka.cpu
 
 run-kafka-local: build-kafka
+	make produce-records
 	docker-compose -f kafka.docker-compose.yml \
 		-f local.docker-compose.yml \
 		run -e AWS_SECRET_ACCESS_KEY -e AWS_ACCESS_KEY_ID --rm kafka-sharp-worker
 
-run-kafka-local-docker: build-kafka
+run-kafka-local-bash: build-kafka
 	docker run \
 		-e "KAFKA_SCHEMA_REGISTRY_URL=http://schema-registry:8081" \
 	    -e "KAFKA_BOOTSTRAP_SERVERS=broker:9092" \
@@ -22,22 +23,16 @@ run-kafka-local-docker: build-kafka
 	    -e "KAFKA_TOPIC_USER_IMAGE_TO_PROCESS=dev-sharp-images-to-process" \
 	    -e "KAFKA_TOPIC_USER_IMAGE_PROCESSED=dev-sharp-processed-images" \
 	    -e "PROCESSED_IMAGES_BUCKET=jimdo-sharp-processed-images-stage" \
-	    -e "AWS_DEFAULT_PROFILE=ecs" \
-	    -e "AWS_SDK_LOAD_CONFIG=true" \
 		-v data:/home/isr/data \
 		--network="image-super-resolution-jimdo_default" \
 		--entrypoint /bin/bash \
 		--rm -it kafka-isr
-
 
 run-kafka-dependencies: stop-kafka-dependencies
 	docker-compose -f kafka.docker-compose.yml up
 
 stop-kafka-dependencies:
 	docker-compose -f kafka.docker-compose.yml down
-
-run:
-	docker run -v $(pwd)/data/:/home/isr/data -v $(pwd)/weights/:/home/isr/weights -v $(pwd)/config.yml:/home/isr/config.yml -it isr -p -d -c config.yml
 
 produce-records:
 	docker-compose -f kafka.docker-compose.yml exec -T schema-registry \
