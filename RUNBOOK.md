@@ -79,3 +79,20 @@ This will apply the infrastructure and create the file with as part of the outpu
 ### Deploying
 
 Just run `$ ENV=stage make deploy` or `$ ENV=prod make deploy`
+
+
+### Monitoring
+
+Production:
+- [Logs](https://app-eu.logz.io/#/goto/14ac651e4e5f47c1e31e28aad112061f?switchToAccountId=15295)
+- [Grafana](https://grafana.jimdo-platform.net/d/000000122/wonderland-user-services?orgId=1&refresh=1m&var-collector=prometheus.jimdo-platform.net&var-service=sharp-worker-isr-processor-prod&var-component=All&from=now-3h&to=now)
+- [Source messages](https://kafka-akhq-engineering.jimdo-platform.net/ui/prod/topic/sharp-images-to-process/data?sort=Newest&partition=All)
+- [Processed messages](https://kafka-akhq-engineering.jimdo-platform.net/ui/prod/topic/sharp-processed-images/data?sort=Newest&partition=All)
+- [Bucket](https://s3.console.aws.amazon.com/s3/buckets/jimdo-sharp-processed-images-prod?region=eu-west-1&tab=objects)
+
+Staging:
+- [Logs](https://app-eu.logz.io/#/goto/2f98829399ee1b6775f57311eb77141b?switchToAccountId=15295)
+- [Grafana](https://grafana.jimdo-platform.net/d/000000122/wonderland-user-services?orgId=1&refresh=1m&var-collector=prometheus.jimdo-platform.net&var-service=sharp-worker-isr-processor-stage&var-component=All&from=now-3h&to=now)
+- [Source messages](https://kafka-akhq-engineering.jimdo-platform.net/ui/stage/topic/sharp-images-to-process/data?sort=Newest&partition=All)
+- [Processed messages](https://kafka-akhq-engineering.jimdo-platform.net/ui/stage/topic/sharp-processed-images/data?sort=Newest&partition=All)
+- [Bucket](https://s3.console.aws.amazon.com/s3/buckets/jimdo-sharp-processed-images-stage?region=eu-west-1&tab=objects)
