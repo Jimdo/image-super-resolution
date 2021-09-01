@@ -12,10 +12,10 @@ import hashlib
 import boto3
 
 from ISR.event_adapters import dict_to_user_image_uploaded_event
-from ISR.event_definitions import ImageSuperResolutionConfiguration, ImageSuperResolutionImageProcessedEvent
+from ISR.event_definitions import ImageSuperResolutionImageProcessedEvent
 from ISR.kafka_producer import SharpKafkaProducer
 from ISR.utils.logger import get_logger
-from ISR.app import predict, destination
+from ISR.app import get_processing_configuration, process_image
 
 running = True
 logger = get_logger(__name__)
@@ -113,15 +113,6 @@ def consume_loop(producer, consumer, topics, process_message):
         logger.info("consumer closed.")
 
 
-def get_processing_configuration():
-    return ImageSuperResolutionConfiguration(
-        model_name=os.environ['MODEL_NAME'],
-        by_patch_of_size=int(os.environ['MODEL_BY_PATCH_OF_SIZE']),
-        batch_size=int(os.environ['MODEL_BATCH_SIZE']),
-        padding_size=int(os.environ['MODEL_PADDING_SIZE'])
-    )
-
-
 def message_processor(msg, producer: SharpKafkaProducer):
     event = msg.value()
     if event is None:
@@ -133,9 +124,8 @@ def message_processor(msg, producer: SharpKafkaProducer):
     object_key = None
 
     logger.info("found url to process %s" % url)
-    processing_configuration = get_processing_configuration()
     start = time()
-    image_path = process_image(url, processing_configuration)
+    image_path = process_image(url)
     end = time()
     processing_time_in_ms = int((end - start) * 1000)
 
@@ -155,7 +145,7 @@ def message_processor(msg, producer: SharpKafkaProducer):
         original_url=url, bucket=bucket, object_key=object_key,
         processing_time_in_ms=processing_time_in_ms,
         created_at=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-        user_image=event, processing_configuration=processing_configuration,
+        user_image=event, processing_configuration=get_processing_configuration(),
         success=image_path is not None
     )
     producer.produce(user_image_processed_event)
@@ -166,22 +156,6 @@ def store_image(image_path, bucket, object_key):
     s3 = boto3.resource('s3')
     with open(image_path, "rb") as data:
         s3.Bucket(bucket).put_object(Key=object_key, Body=data)
-
-
-def process_image(url, processing_configuration):
-    logger.info("received url %s" % url)
-    filepath = destination()
-    logger.info("running prediction")
-    succeeded = predict(url, filepath,
-                        processing_configuration.model_name,
-                        processing_configuration.by_patch_of_size,
-                        processing_configuration.batch_size,
-                        processing_configuration.padding_size)
-    if succeeded is False:
-        logger.warning("prediction failed")
-        return None
-
-    return filepath
 
 
 if __name__ == "__main__":

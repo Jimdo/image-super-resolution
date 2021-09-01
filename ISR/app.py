@@ -7,22 +7,11 @@ from urllib.error import URLError
 import imageio
 import yaml
 import string
+
+from ISR.event_definitions import ImageSuperResolutionConfiguration
 from ISR.utils.logger import get_logger
 from ISR.utils.utils import get_timestamp, get_config_from_weights
 import random
-
-
-def check_origin(url):
-    valid_origins = [
-        'jimdo-dolphin-static-assets-stage.freetls.fastly.net',
-        'content-storage-stage.freetls.fastly.net',
-        'jimdo-dolphin-static-assets-prod.freetls.fastly.net',
-        'jimdo-storage.freetls.fastly.net',
-        'jimdo-dolphin-static-assets-stage.freetls.fastly.net',
-        'content-storage-stage.freetls.fastly.net'
-    ]
-    origin = url.split('/')[2]
-    return origin in valid_origins
 
 
 def _get_module(generator):
@@ -37,24 +26,19 @@ logger = get_logger(__name__)
 logger.info('Started in ' + ('GPU' if is_gpu() else 'CPU') + ' mode')
 
 
-def predict(url, destination_path, model_name, by_patch_of_size, batch_size, padding_size):
-    physical_devices = []
-    if is_gpu():
-        import tensorflow as tf
-        physical_devices = tf.config.list_physical_devices('GPU')
-        tf.config.experimental.set_memory_growth(physical_devices[0], True)
-
-    logger.info("Num GPUs Available: {}".format(len(physical_devices)))
-    logger.info('Magnifying with {}'.format(model_name))
-    gen = _setup_model(model_name)
-    return run(url, gen, destination_path, by_patch_of_size, batch_size, padding_size)
+def get_processing_configuration():
+    return ImageSuperResolutionConfiguration(
+        model_name=os.environ['MODEL_NAME'],
+        by_patch_of_size=int(os.environ['MODEL_BY_PATCH_OF_SIZE']),
+        batch_size=int(os.environ['MODEL_BATCH_SIZE']),
+        padding_size=int(os.environ['MODEL_PADDING_SIZE'])
+    )
 
 
 def _setup_model(model):
     # Available Models
     # RDN: psnr-large, psnr-small, noise-cancel
     # RRDN: gans
-    logger = get_logger(__name__)
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
     config_file = 'config.yml'
     conf = yaml.load(open(config_file, 'r'), Loader=yaml.FullLoader)
@@ -81,22 +65,30 @@ def destination():
     return output_path
 
 
-def run(url, gen, destination_path, by_patch_of_size, batch_size, padding_size):
+model = _setup_model(os.environ['MODEL_NAME'])
+
+
+def process_image(url):
     logger.info('Downloading file\n > {}'.format(url))
     try:
         img = imageio.imread(url)
     except URLError:
         logger.info('Could not download the file.')
-        return False
+        return None
 
+    processing_configuration = get_processing_configuration()
     logger.info('size: {}x{}'.format(img.shape[1], img.shape[0]))
-    logger.info('by_patch_of_size: {}'.format(by_patch_of_size))
-    logger.info('batch_size: {}'.format(batch_size))
-    logger.info('padding_size: {}'.format(padding_size))
+    logger.info('by_patch_of_size: {}'.format(processing_configuration.by_patch_of_size))
+    logger.info('batch_size: {}'.format(processing_configuration.batch_size))
+    logger.info('padding_size: {}'.format(processing_configuration.padding_size))
+    destination_path = destination()
     logger.info('Result will be saved in\n > {}'.format(destination_path))
     start = time()
-    sr_img = gen.predict(img, by_patch_of_size=by_patch_of_size, batch_size=batch_size, padding_size=padding_size)
+    sr_img = model.predict(img,
+                           by_patch_of_size=processing_configuration.by_patch_of_size,
+                           batch_size=processing_configuration.batch_size,
+                           padding_size=processing_configuration.padding_size)
     end = time()
     logger.info('Elapsed time: {}s'.format(end - start))
     imageio.imwrite(destination_path, sr_img)
-    return True
+    return destination_path
