@@ -2,6 +2,8 @@ import os
 from importlib import import_module
 from pathlib import Path
 from time import time
+from urllib.error import URLError
+
 import imageio
 import yaml
 import string
@@ -45,7 +47,7 @@ def predict(url, destination_path, model_name, by_patch_of_size, batch_size, pad
     logger.info("Num GPUs Available: {}".format(len(physical_devices)))
     logger.info('Magnifying with {}'.format(model_name))
     gen = _setup_model(model_name)
-    run(url, gen, destination_path, by_patch_of_size, batch_size, padding_size)
+    return run(url, gen, destination_path, by_patch_of_size, batch_size, padding_size)
 
 
 def _setup_model(model):
@@ -81,7 +83,12 @@ def destination():
 
 def run(url, gen, destination_path, by_patch_of_size, batch_size, padding_size):
     logger.info('Downloading file\n > {}'.format(url))
-    img = imageio.imread(url)
+    try:
+        img = imageio.imread(url)
+    except URLError:
+        logger.info('Could not download the file.')
+        return False
+
     logger.info('size: {}x{}'.format(img.shape[1], img.shape[0]))
     logger.info('by_patch_of_size: {}'.format(by_patch_of_size))
     logger.info('batch_size: {}'.format(batch_size))
@@ -92,4 +99,4 @@ def run(url, gen, destination_path, by_patch_of_size, batch_size, padding_size):
     end = time()
     logger.info('Elapsed time: {}s'.format(end - start))
     imageio.imwrite(destination_path, sr_img)
-    return destination_path
+    return True

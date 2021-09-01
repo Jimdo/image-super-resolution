@@ -36,11 +36,8 @@ class ImageSuperResolutionImageProcessedEvent(object):
     def __init__(self, original_url=None, bucket=None, object_key=None,
                  created_at=None, processing_time_in_ms=None,
                  user_image: UserImageUploadedEvent = None,
-                 processing_configuration: ImageSuperResolutionConfiguration = None):
-
-        for prop in [original_url, bucket, object_key, user_image]:
-            if prop is None:
-                raise Exception("All values in ImageSuperResolutionImageProcessedEvent are required")
+                 processing_configuration: ImageSuperResolutionConfiguration = None,
+                 success=False):
 
         self.original_url = original_url
         self.bucket = bucket
@@ -49,3 +46,4 @@ class ImageSuperResolutionImageProcessedEvent(object):
         self.processing_configuration = processing_configuration
         self.created_at = created_at
         self.processing_time_in_ms = processing_time_in_ms
+        self.success = success

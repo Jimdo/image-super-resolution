@@ -129,25 +129,34 @@ def message_processor(msg, producer: SharpKafkaProducer):
         return
 
     url = event.url
-    object_key = hashlib.md5(url.encode()).hexdigest()
-    bucket = os.environ['PROCESSED_IMAGES_BUCKET']
+    bucket = None
+    object_key = None
 
     logger.info("found url to process %s" % url)
     processing_configuration = get_processing_configuration()
     start = time()
     image_path = process_image(url, processing_configuration)
     end = time()
-    processing_time_in_ms = int((end - start)*1000)
+    processing_time_in_ms = int((end - start) * 1000)
 
-    logger.info("image ready at %s" % image_path)
-    logger.info("uploading image to s3://{}/{}...".format(bucket, object_key))
-    store_image(image_path, bucket, object_key)
-    logger.info("producing next event...")
+    if image_path is None:
+        logger.warn("unable to process image")
+
+    if image_path is not None:
+        logger.info("image ready at %s" % image_path)
+
+        object_key = hashlib.md5(url.encode()).hexdigest()
+        bucket = os.environ['PROCESSED_IMAGES_BUCKET']
+        logger.info("uploading image to s3://{}/{}...".format(bucket, object_key))
+        store_image(image_path, bucket, object_key)
+        logger.info("producing next event...")
+
     user_image_processed_event = ImageSuperResolutionImageProcessedEvent(
         original_url=url, bucket=bucket, object_key=object_key,
         processing_time_in_ms=processing_time_in_ms,
         created_at=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-        user_image=event, processing_configuration=processing_configuration
+        user_image=event, processing_configuration=processing_configuration,
+        success=image_path is not None
     )
     producer.produce(user_image_processed_event)
     logger.info("event produced. message processed.")
@@ -163,11 +172,14 @@ def process_image(url, processing_configuration):
     logger.info("received url %s" % url)
     filepath = destination()
     logger.info("running prediction")
-    predict(url, filepath,
-            processing_configuration.model_name,
-            processing_configuration.by_patch_of_size,
-            processing_configuration.batch_size,
-            processing_configuration.padding_size)
+    succeeded = predict(url, filepath,
+                        processing_configuration.model_name,
+                        processing_configuration.by_patch_of_size,
+                        processing_configuration.batch_size,
+                        processing_configuration.padding_size)
+    if succeeded is False:
+        logger.warning("prediction failed")
+        return None
 
     return filepath
 

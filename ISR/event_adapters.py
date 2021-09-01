@@ -37,6 +37,7 @@ def user_image_processed_event_to_dict(event: ImageSuperResolutionImageProcessed
                 object_key=event.object_key,
                 created_at=event.created_at,
                 processing_time_in_ms=event.processing_time_in_ms,
+                success=event.success,
                 processing_configuration=dict(
                     model_name=event.processing_configuration.model_name,
                     by_patch_of_size=event.processing_configuration.by_patch_of_size,
