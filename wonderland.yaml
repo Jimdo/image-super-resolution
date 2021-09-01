@@ -7,11 +7,10 @@ components:
   - name: {{ env `SERVICE_NAME` }}
     image: {{ env `IMAGE_TAG` }}
     capacity:
-      {{if eq (env `ENV`) "prod"}}
       memory: XXL
+      {{if eq (env `ENV`) "prod"}}
       cpu: XXXL
       {{else}}
-      memory: XL
       cpu: XL
       {{end}}
     env:

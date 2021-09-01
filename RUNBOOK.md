@@ -49,6 +49,42 @@ There's also a command to run the container and have the *bash* as the entry poi
 $ make run-kafka-local-bash
 ```
 
+
+## Evolving the schema
+
+The schema registry has the `BACKWARD` compatibility option enabled by default. So if you make changes to the schemas 
+they need to be compatible with old schemas. For example, when adding a new field, make sure to set a `default` value. 
+
+Schemas are applied automatically when a new record is processed and is about to be send to the `KAFKA_TOPIC_USER_IMAGE_PROCESSED` topic.
+If the schema is not compatible, you will get an error similar to:
+
+```shell script
+confluent_kafka.schema_registry.error.SchemaRegistryError:
+Schema being registered is incompatible with an earlier schema for subject "sharp-processed-images-value"
+```
+
+### Interacting with the schema registry
+
+The schema registry for prod is hosted at https://schema-registry-engineering-prod.jimdo-platform.net, however you can't 
+make requests directly to it. You can use ssh tunnelling like this:
+
+- Open a ssh tunnel in one terminal:
+```shell script
+$ ssh -i ~/.ssh/id_rsa.pem \
+    jonathanmv@infra.bastion.prod.aws.jimdo-server.com -p2022 \
+    -L 8088:schema-registry-engineering-prod.jimdo-platform.net:443 \
+    -N
+```
+
+This creates a connection between the local port `8088` and the remote port `443`.
+
+- In another terminal run your schema registry request:
+```shell script
+$ curl -k https://localhost:8088/schemas/ids/2
+``` 
+
+Check more Schema Registry API examples [here](https://docs.confluent.io/platform/current/schema-registry/develop/using.html)
+
 ## Infrastructure
 
 This worker creates 2 buckets:
