@@ -9,11 +9,13 @@
     },
     {
       "name": "bucket",
-      "type": ["string", "null"]
+      "type": ["string", "null"],
+      "default": ""
     },
     {
       "name": "object_key",
-      "type": ["string", "null"]
+      "type": ["string", "null"],
+      "default": ""
     },
     {
       "name": "created_at",
@@ -21,7 +23,8 @@
     },
     {
       "name": "success",
-      "type": ["boolean", "null"]
+      "type": ["boolean", "null"],
+      "default":  true
     },
     {
       "name": "processing_time_in_ms",
